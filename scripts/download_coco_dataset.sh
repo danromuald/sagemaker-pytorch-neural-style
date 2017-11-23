@@ -11,7 +11,7 @@ idVer=1.0
 PROJECT_HOME=`pwd`
 
 function download_coco () {
-    cd dataset
+    cd /opt/ml/input/data
     wget http://msvocds.blob.core.windows.net/coco2014/train2014.zip
     wget http://msvocds.blob.core.windows.net/coco2014/val2014.zip
     unzip train2014.zip
