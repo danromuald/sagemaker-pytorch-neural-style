@@ -28,7 +28,7 @@ from model import Net
 from utils.mod_utils import Vgg16
 from utils.img_utils import StyleLoader, InferenceStyleLoader, preprocess_batch
 
-from options import TrainingOptions
+from options import Options
 import logging
 import traceback
 import argparse
@@ -61,9 +61,6 @@ def check_paths(args):
 
 def train(args):
     
-    print("training args: " + "\n\n" + str(args))
-    #trainingOptions = TrainingOptions()
-    #args = trainingOptions.parser.parse_args()
     check_paths(args)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -96,8 +93,7 @@ def train(args):
             train_loader = DataLoader(train_dataset, batch_size=args.batch_size, **kwargs)
             style_model = Net(ngf=ngf)
 
-            # logger.info(style_model)
-            #print(style_model)
+            print(style_model)
 
             optimizer = Adam(style_model.parameters(), learning_rate)
             mse_loss = torch.nn.MSELoss()
@@ -225,15 +221,13 @@ def sigterm_handler(signum, frame):
 class ScoringService(object):
     PORT = 8080
     model = None
-    #evalOptions = EvalOptions()
-    #args = evalOptions.parser.parse_args()
 
     @classmethod
     def get_model(cls):
         if not cls.is_model_loaded():
                 # TODO: change the load method to the proper format.
-                style_model = Net(ngf=ScoringService.args.ngf)
-                cls.model = style_model.load_state_dict(torch.load(os.path.join(model_path, save_model_filename)))
+                style_model = Net(ngf=args.ngf)
+                cls.model = style_model.load_state_dict(torch.load(os.path.join(model_path, final_model_filename)))
         return cls.model
 
     @classmethod
@@ -254,6 +248,7 @@ class ScoringService(object):
             content_image = content_image.cuda()
             content_image = Variable(
                 utils.img_utils.preprocess_batch(content_image), volatile=True)
+            cls.model.cuda()
 
         style_v = Variable(style_loader.get().data, volatile=True)
         style_model.setTarget(style_v)
@@ -308,7 +303,7 @@ def transformation():
 
         result = jsonify(
             {
-                "stylizedPhoto": str(stylizedPhoto)
+                "stylizedPhoto": stylizedPhoto
             }
         )
         return flask.Response(response=result, status=200, mimetype="application/json")
@@ -326,7 +321,7 @@ def serve():
 def main():
 
 # The main routine decides what mode we're in and executes that arm
-    args = TrainingOptions()
+    args = Options()
     args = args.parser.parse_args()
     logger.info(str(args))
     if args.subcommand == "train":

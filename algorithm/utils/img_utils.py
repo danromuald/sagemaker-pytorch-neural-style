@@ -58,7 +58,7 @@ def tensor_make_inference_img_str(tensor, cuda=True):
     buff = BytesIO()
     img.save(buff, format='JPEG')
     img_str = base64.b64encode(buff.getvalue())
-    return img_str
+    return "base64:" + str(img_str)
 
 def tensor_save_rgbimage(tensor, filename, cuda=False):
     if cuda:

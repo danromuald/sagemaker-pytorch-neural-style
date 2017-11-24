@@ -14,15 +14,21 @@ ENV DANULAB_ANACONDA_CHANNEL etcshadow
 
 ENV PYTHONBUFFERED TRUE
 
-ENV PYTORCH_WORK_DIR /pytorch-workspace
+ENV HOME_DIR /opt/ml/pytorch-neural-art
+ENV ALGO_DIR ${HOME_DIR}/algorithm
 
-ENV HOME_DIR ${PYTORCH_WORK_DIR}/pytorch-neural-art
-ENV ALGO_HOME_DIR ${HOME_DIR}/algorithm
+RUN mkdir -p /opt/ml/input/config
+RUN mkdir -p /opt/ml/input/data/train
+RUN mkdir -p /opt/ml/input/data/eval
+RUN mkdir -p /opt/ml/model
+RUN mkdir -p /opt/ml/output 
 
-WORKDIR ${HOME_DIR}}
+### Move files to the image 
 
-ADD . .
-ADD opt /opt
+WORKDIR ${HOME_DIR}
+
+COPY . .
+
 
 ###############################
 # First, install apt-utils
@@ -32,10 +38,12 @@ RUN apt-get update
 RUN apt-get install -y apt-utils
 
 RUN echo "deb http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1604/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list
+RUN echo "deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ xenial main restricted" >> /etc/apt/sources.list
+RUN echo "deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ xenial-updates main restricted" >> /etc/apt/sources.list
 
 RUN apt-get update
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends --allow-downgrades \
     libcudnn7=$CUDNN_VERSION-1+cuda9.0 \
     libcudnn7-dev=$CUDNN_VERSION-1+cuda9.0 \
     build-essential \
@@ -43,8 +51,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
     vim \
-    tmux \
-    mlocate \
+    wget \
+    zip unzip \
     htop \
     ca-certificates \
     libnccl2=2.0.5-3+cuda9.0 \
@@ -56,13 +64,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install Anaconda full. Not miniconda.
 # https://repo.continuum.io/archive/Anaconda3-5.0.1-Linux-x86_64.sh
 
-RUN curl -o ~/anaconda3-latest.sh -O  https://repo.continuum.io/archive/Anaconda3-5.0.1-Linux-x86_64.sh  && \
-    chmod +x ~/anaconda3-latest.sh && \
-    ~/anaconda3-latest.sh -b -p /opt/conda && \
-    rm ~/anaconda3-latest.sh && \
+RUN curl -o ~/miniconda-latest.sh -O https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+    chmod +x ~/miniconda-latest.sh && \
+    ~/miniconda-latest.sh -b -p /opt/conda && \
+    rm ~/miniconda-latest.sh && \
     /opt/conda/bin/conda install conda-build && \
     /opt/conda/bin/conda create -y --name pytorch-py35 python=${PYTHON_VERSION} \
-    anaconda numpy pyyaml scipy ipython mkl jupyter && \
+    numpy pyyaml scipy ipython mkl jupyter && \
     /opt/conda/bin/conda clean -ya
 
 ENV PATH /opt/conda/envs/pytorch-py35/bin:$PATH
@@ -113,14 +121,13 @@ RUN TORCH_CUDA_ARCH_LIST="3.7+PTX 5.0 5.2 5.3 6.0 6.1+PTX 6.2 7.0+PTX" TORCH_NVC
 
 # Working directory + examples
 
-WORKDIR ${PYTORCH_WORK_DIR}
-
-RUN git clone --recursive https://github.com/pytorch/examples.git
+WORKDIR /opt
 
 RUN git clone --recursive https://github.com/pytorch/vision.git && \
     cd vision && pip install -v .
 
 
-RUN chmod -R a+wx ${PYTORCH_WORK_DIR}
+RUN chmod -R a+wx /opt
 
-ENTRYPOINT ["python3.5","${ALGO_HOME_DIR}/style_transfer.py"]
+ENTRYPOINT ["python3.5","/opt/ml/pytorch-neural-art/algorithm/style_transfer.py"]
+
