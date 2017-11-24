@@ -1,7 +1,7 @@
 import argparse
 
 
-class TrainingOptions(object):
+class Options(object):
     def __init__(self):
         self.parser = argparse.ArgumentParser(description="parser for training PyTorch-Style-Transfer")
         # training args
@@ -41,34 +41,4 @@ class TrainingOptions(object):
                                 help="number of images after which the training loss is logged, default is 500")
         train_args.add_argument("--resume", type=str, default=None,
                                 help="resume if needed")
-
-        #return self.parser.parse_args()
-
-"""
-class EvalOptions():
-    def __init__(self):
-        self.parser = argparse.ArgumentParser(
-            description="parser for evaluating PyTorch-Style-Transfer")
-
-        # evaluation args
-        self.parser.add_argument("--ngf", type=int, default=128,
-                                help="number of generator filter channels, default 128")
-        self.parser.add_argument("--content-image", type=str, required=False,
-                                help="path to content image you want to stylize")
-        self.parser.add_argument("--style-image", type=str, default="images/9styles/candy.jpg",
-                                help="path to style-image")
-        self.parser.add_argument("--content-size", type=int, default=512,
-                                help="factor for scaling down the content image")
-        self.parser.add_argument("--style-size", type=int, default=512,
-                                help="size of style-image, default is the original size of style image")
-        self.parser.add_argument("--style-folder", type=str, default="images/9styles/",
-                                help="path to style-folder")
-        self.parser.add_argument("--output-image", type=str, default="output.jpg",
-                                help="path for saving the output image")
-        self.parser.add_argument("--model", type=str, required=False,
-                                help="saved model to be used for stylizing the image")
-        self.parser.add_argument("--cuda", type=int, default=1,
-                                help="set it to 1 for running on GPU, 0 for CPU")
-        self.parser.add_argument("--vgg-model-dir", type=str, default="models/",
-                                help="directory for vgg, if model is not present in the directory it is downloaded")
-"""
+                                
