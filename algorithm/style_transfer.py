@@ -26,13 +26,12 @@ from torchvision import transforms
 import utils
 from model import Net
 from utils.mod_utils import Vgg16
-from utils.img_utils import StyleLoader, InferenceStyleLoader
-from sm_training import SMTraining
+from utils.img_utils import StyleLoader, InferenceStyleLoader, preprocess_batch
 
-from options import TrainingOptions, EvalOptions
+from options import TrainingOptions
 import logging
 import traceback
-
+import argparse
 
 sagemaker_prefix = '/opt/ml'
 input_path = os.path.join(sagemaker_prefix,'input/data')
@@ -41,6 +40,9 @@ model_path = os.path.join(sagemaker_prefix, 'model')
 param_path = os.path.join(sagemaker_prefix, 'input/config/hyperparameters.json')
 final_model_filename = "msg_neural_style_transfer.model"
 
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("SageMaker")
 
 channel_name = 'train'
 training_path = os.path.join(input_path, channel_name)
@@ -57,10 +59,11 @@ def check_paths(args):
         sys.exit(1)
 
 
-def train():
+def train(args):
     
-    trainingOptions = TrainingOptions()
-    args = trainingOptions.parser.parse_args()
+    print("training args: " + "\n\n" + str(args))
+    #trainingOptions = TrainingOptions()
+    #args = trainingOptions.parser.parse_args()
     check_paths(args)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -76,25 +79,25 @@ def train():
             learning_rate = trainingParams.get('learning_rate',args.learning_rate)
             cuda = trainingParams.get('cuda', args.cuda)
 
-
+            
             if cuda:
+                logger.info("Using CUDA")
                 torch.cuda.manual_seed(args.seed)
-                kwargs = {'num_workers': 4, 'pin_memory': True}
+                kwargs = {'num_workers': 0, 'pin_memory': False}
+                logger.info("Using kwarguments: \n" + str(kwargs))
             else:
                 kwargs = {}
             
             transform = transforms.Compose([transforms.Scale(args.image_size),
-                                            transforms.CenterCrop(
-                                                args.image_size),
+                                            transforms.CenterCrop(args.image_size),
                                             transforms.ToTensor(),
                                             transforms.Lambda(lambda x: x.mul(255))])
-            train_dataset = datasets.ImageFolder(training_path, transform)
-            train_loader = DataLoader(
-            train_dataset, batch_size=args.batch_size, **kwargs)
-
+            train_dataset = datasets.ImageFolder(args.dataset, transform)
+            train_loader = DataLoader(train_dataset, batch_size=args.batch_size, **kwargs)
             style_model = Net(ngf=ngf)
 
-            logging.info(str(style_model))
+            # logger.info(style_model)
+            #print(style_model)
 
             optimizer = Adam(style_model.parameters(), learning_rate)
             mse_loss = torch.nn.MSELoss()
@@ -102,13 +105,13 @@ def train():
             vgg = Vgg16()
 
             utils.mod_utils.init_vgg16(args.vgg_model_dir)
-            vgg.load_state_dict(torch.load(os.path.join(args.vgg_model_dir, 'vgg16.weight')))
+            vgg.load_state_dict(torch.load(os.path.join(args.vgg_model_dir, "vgg16.weight")))
 
             if cuda:
                 style_model.cuda()
                 vgg.cuda()
             
-            style_loader = utils.StyleLoader(args.style_folder, args.style_size)
+            style_loader = StyleLoader(args.style_folder, args.style_size)
 
             for e in range(epochs):
                 style_model.train()
@@ -120,7 +123,7 @@ def train():
                     n_batch = len(x)
                     count += n_batch
                     optimizer.zero_grad()
-                    x = Variable(utils.img_utils.preprocess_batch(x))
+                    x = Variable(preprocess_batch(x))
                     if cuda:
                         x.cuda()
 
@@ -129,17 +132,16 @@ def train():
 
                     style_v = utils.img_utils.subtract_imagenet_mean_batch(style_v)
                     features_style = vgg(style_v)
-                    gram_style = [utils.img_utils.gram_matrix(
-                        y) for y in features_style]
+                    gram_style = [utils.img_utils.gram_matrix(y) for y in features_style]
 
-                    y = style_model(x)
+                    y = style_model(x.cuda())
                     xc = Variable(x.data.clone(), volatile=True)
 
                     y = utils.img_utils.subtract_imagenet_mean_batch(y)
                     xc = utils.img_utils.subtract_imagenet_mean_batch(xc)
 
                     features_y = vgg(y)
-                    features_xc = vgg(xc)
+                    features_xc = vgg(xc.cuda())
 
                     f_xc_c = Variable(features_xc[1].data, requires_grad=False)
 
@@ -149,10 +151,8 @@ def train():
                     style_loss = 0.
                     for m in range(len(features_y)):
                         gram_y = utils.img_utils.gram_matrix(features_y[m])
-                        gram_s = Variable(gram_style[m].data, requires_grad=False).repeat(
-                            args.batch_size, 1, 1, 1)
-                        style_loss += args.style_weight * \
-                            mse_loss(gram_y, gram_s[:n_batch, :, :])
+                        gram_s = Variable(gram_style[m].data, requires_grad=False).repeat(args.batch_size, 1, 1, 1)
+                        style_loss += args.style_weight * mse_loss(gram_y, gram_s[:n_batch, :, :])
 
                     total_loss = content_loss + style_loss
                     total_loss.backward()
@@ -205,7 +205,7 @@ def train():
         with open(os.path.join(output_path, 'failure'), 'w') as s:
             trc = traceback.format_exc()
             logger.info('Exception during training: ' +
-                  str(e) + '\n' + trc, file=sys.stderr)
+                  str(e) + '\n' + trc)
             s.write('Exception during training: ' + str(e) + '\n' + trc)
 
 
@@ -225,8 +225,8 @@ def sigterm_handler(signum, frame):
 class ScoringService(object):
     PORT = 8080
     model = None
-    evalOptions = EvalOptions()
-    args = evalOptions.parser.parse_args()
+    #evalOptions = EvalOptions()
+    #args = evalOptions.parser.parse_args()
 
     @classmethod
     def get_model(cls):
@@ -325,25 +325,17 @@ def serve():
 
 def main():
 
-    # The main routine decides what mode we're in and executes that arm
-    parser = optparse.OptionParser()
-    parser.add_option('-d', dest='mode')
-    (options, args) = parser.parse_args()
-
-    if options.mode == 'train' or (len(args) > 0 and args[0]=='train'):
-        train()
+# The main routine decides what mode we're in and executes that arm
+    args = TrainingOptions()
+    args = args.parser.parse_args()
+    logger.info(str(args))
+    if args.subcommand == "train":
+        logger.info("Training with arguments: " + str(args))
+        train(args)
     else:
+        logger.info("Serving with arguments: " + str(args))
         serve()
 
 
 if __name__ == "__main__":
     main()
-
-
-"""
-@app.route('/process_image', methods=['post'])
-def process_image():
-    image_data = re.sub('^data:image/.+;base64,', '', request.form['data'])
-    im = Image.open(BytesIO(base64.b64decode(image_data)))
-    return json.dumps({'result': 'success'}), 200, {'ContentType': 'application/json'}
-"""
