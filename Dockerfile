@@ -19,7 +19,9 @@ WORKDIR ${HOME_DIR}
 
 COPY . .
 
+RUN pip install flask
+
 RUN chmod -R a+wx /opt
 
-ENTRYPOINT ["python3.5","/opt/ml/pytorch-neural-art/algorithm/style_transfer.py"]
+ENTRYPOINT [ "/opt/ml/pytorch-neural-art/bin/entrypoint.sh" ]
 
