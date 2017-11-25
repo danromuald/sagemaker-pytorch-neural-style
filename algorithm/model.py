@@ -207,9 +207,9 @@ class Inspiration(nn.Module):
 
     def forward(self, X):
         # input X is a 3D feature map
-        self.P = torch.bmm(self.weight.expand_as(self.G), self.G)
-        return torch.bmm(self.P.transpose(1, 2).expand(X.size(0), self.C, self.C),
-                         X.view(X.size(0), X.size(1), -1)).view_as(X)
+        self.P = torch.bmm(self.weight.expand_as(self.G).cuda(), self.G.cuda())
+        return torch.bmm(self.P.transpose(1, 2).expand(X.size(0), self.C, self.C).cuda(),
+                         X.view(X.size(0), X.size(1), -1).cuda()).view_as(X)
 
     def __repr__(self):
         return self.__class__.__name__ + '(' \
@@ -251,6 +251,7 @@ class Net(nn.Module):
                   ConvLayer(16 * expansion, output_nc, kernel_size=7, stride=1)]
 
         self.model = nn.Sequential(*model)
+        self.model = nn.DataParallel(self.model)
 
     def setTarget(self, Xs):
         F = self.model1(Xs)
@@ -259,5 +260,4 @@ class Net(nn.Module):
 
     def forward(self, input):
         return self.model(input)
-
-
+    

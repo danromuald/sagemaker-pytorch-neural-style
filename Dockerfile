@@ -10,6 +10,7 @@ ENV DANULAB_PYTORCH_IMAGE_VERSION 17.11
 ENV DANULAB_PYTORCH_BUILD_VERSION 2.0
 
 ENV PYTHONBUFFERED TRUE
+ENV CUDA_VISIBLE_DEVICES 0,1,2,3
 
 ENV HOME_DIR /opt/ml/pytorch-neural-art
 
@@ -19,9 +20,6 @@ WORKDIR ${HOME_DIR}
 
 COPY . .
 
-RUN pip install flask
-
 RUN chmod -R a+wx /opt
 
-ENTRYPOINT [ "python3.5","algorithm/style_transfer.py" ]
-
+ENTRYPOINT ["python3.5","algorithm/style_transfer.py" ]

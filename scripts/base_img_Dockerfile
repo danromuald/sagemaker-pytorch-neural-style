@@ -11,31 +11,21 @@ ENV DANULAB_PYTORCH_BUILD_VERSION 2.0
 ## Dan'utils Anaconda channel for magma-cuda90. I had to build the package to support cuda9.0.
 ## Not yet available on the default Anaconda repository.
 ENV DANULAB_ANACONDA_CHANNEL etcshadow
-
+ENV PATH /opt/conda/envs/pytorch-py35/bin:$PATH
 ENV PYTHONBUFFERED TRUE
 
 
-RUN mkdir -p /opt/ml/input/config
-RUN mkdir -p /opt/ml/input/data/train
-RUN mkdir -p /opt/ml/input/data/eval
-RUN mkdir -p /opt/ml/model
-RUN mkdir -p /opt/ml/output 
-
-
-###############################
-# First, install apt-utils
-
-RUN apt-get update
-
-RUN apt-get install -y apt-utils
-
-RUN echo "deb http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1604/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list
-RUN echo "deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ xenial main restricted" >> /etc/apt/sources.list
-RUN echo "deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ xenial-updates main restricted" >> /etc/apt/sources.list
-
-RUN apt-get update
-
-RUN apt-get update && apt-get install -y --no-install-recommends --allow-downgrades \
+RUN mkdir -p /opt/ml/input/config && \
+    mkdir -p /opt/ml/input/data/train && \
+    mkdir -p /opt/ml/input/data/eval && \
+    mkdir -p /opt/ml/model && \
+    mkdir -p /opt/ml/output && \
+    apt-get update && \
+    apt-get install -y apt-utils && \
+    echo "deb http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1604/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list && \
+    echo "deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ xenial main restricted" >> /etc/apt/sources.list && \
+    echo "deb-src http://us-east-1.ec2.archive.ubuntu.com/ubuntu/ xenial-updates main restricted" >> /etc/apt/sources.list && \
+    apt-get update && apt-get install -y --no-install-recommends --allow-downgrades \
     libcudnn7=$CUDNN_VERSION-1+cuda9.0 \
     libcudnn7-dev=$CUDNN_VERSION-1+cuda9.0 \
     build-essential \
@@ -44,28 +34,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends --allow-downgra
     curl \
     vim \
     wget \
-    zip unzip \
+    zip \
     htop \
     ca-certificates \
     libnccl2=2.0.5-3+cuda9.0 \
     libnccl-dev=2.0.5-3+cuda9.0 \
     libjpeg-dev \
     libpng-dev &&\
-    rm -rf /var/lib/apt/lists/*
-
-# Install Anaconda full. Not miniconda.
-# https://repo.continuum.io/archive/Anaconda3-5.0.1-Linux-x86_64.sh
-
-RUN curl -o ~/miniconda-latest.sh -O https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+    rm -rf /var/lib/apt/lists/* && \
+    curl -o ~/miniconda-latest.sh -O https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
     chmod +x ~/miniconda-latest.sh && \
     ~/miniconda-latest.sh -b -p /opt/conda && \
     rm ~/miniconda-latest.sh && \
     /opt/conda/bin/conda install conda-build && \
     /opt/conda/bin/conda create -y --name pytorch-py35 python=${PYTHON_VERSION} \
-    numpy pyyaml scipy ipython mkl jupyter && \
+    numpy pyyaml scipy ipython mkl jupyter flask && \
     /opt/conda/bin/conda clean -ya
-
-ENV PATH /opt/conda/envs/pytorch-py35/bin:$PATH
 
 ##### Installing magma-cuda90 from my Anaconda channel ##################################
 # https://anaconda.org/etcshadow/magma-cuda90                                           #
@@ -79,16 +63,6 @@ ENV PATH /opt/conda/envs/pytorch-py35/bin:$PATH
 # RUN conda install ./magma-cuda90-2.1.0-h865527f_5.tar.bz2                             #
 #########################################################################################
 
-
-RUN conda install --name pytorch-py35 -c ${DANULAB_ANACONDA_CHANNEL} magma-cuda90
-
-WORKDIR /opt
-
-RUN git clone --recursive https://github.com/pytorch/pytorch.git
-
-WORKDIR /opt/pytorch
-
-RUN git submodule update --init
 
 #################################### BUILDING Pytorch for VOLTA on cuda9.0 ##################
 # REF: https://github.com/torch/cutorch/blob/master/lib/THC/cmake/select_compute_arch.cmake #
@@ -106,20 +80,18 @@ RUN git submodule update --init
 #    - Volta V100: 7.0+PTX (PTX = parallel Thread Execution): even faster!                  #
 #############################################################################################
 
-RUN TORCH_CUDA_ARCH_LIST="3.7+PTX 5.0 5.2 5.3 6.0 6.1+PTX 6.2 7.0+PTX" TORCH_NVCC_FLAGS="-Xfatbin -compress-all" \
+RUN conda install --name pytorch-py35 -c ${DANULAB_ANACONDA_CHANNEL} magma-cuda90 && cd /opt && \
+    git clone --recursive https://github.com/pytorch/pytorch.git && \
+    cd /opt/pytorch && \
+    git submodule update --init && \
+    TORCH_CUDA_ARCH_LIST="3.7+PTX 5.0 5.2 5.3 6.0 6.1+PTX 6.2 7.0+PTX" \
+    TORCH_NVCC_FLAGS="-Xfatbin -compress-all" \
     CMAKE_PREFIX_PATH="$(dirname $(which conda))/../" \
-    pip install -v .
-
-
-# Working directory + examples
-
-WORKDIR /opt
-
-RUN git clone --recursive https://github.com/pytorch/vision.git && \
-    cd vision && pip install -v .
-
-
-RUN chmod -R a+wx /opt
+    pip install -v . && \
+    cd /opt && \
+    git clone --recursive https://github.com/pytorch/vision.git && \
+    cd vision && \
+    pip install -v . && \
+    chmod -R a+wx /opt
 
 ENTRYPOINT ["bash"]
-

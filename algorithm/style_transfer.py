@@ -19,6 +19,7 @@ import torch
 from torch.optim import Adam
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
+import torch.nn as nn
 
 from torchvision import datasets
 from torchvision import transforms
@@ -81,7 +82,7 @@ def train(args):
             if cuda:
                 logger.info("Using CUDA")
                 torch.cuda.manual_seed(args.seed)
-                kwargs = {'num_workers': 0, 'pin_memory': False}
+                kwargs = {'num_workers': 8, 'pin_memory': True}
                 logger.info("Using kwarguments: \n" + str(kwargs))
             else:
                 kwargs = {}
@@ -177,7 +178,7 @@ def train(args):
                                               "_" + str(time.ctime()).replace(' ','_') + \
                                                "_" + str(args.content_weight) + "_" + \
                                                str(args.style_weight) + ".model"
-                        save_model_path = os.path.join(args.temp_save_model_dir, save_model_filename)
+                        save_model_path = os.path.join(temp_save_model_dir, save_model_filename)
                         
                         torch.save(style_model.state_dict(), save_model_path)
                         style_model.train()
