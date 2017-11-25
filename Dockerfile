@@ -1,4 +1,4 @@
-FROM danulab/sagemaker/pytorch:latest
+FROM danulab/sagemaker/pytorch-base:latest
 LABEL maintainer="Dan R. Mbanga"
 # vars
 ## Python version
