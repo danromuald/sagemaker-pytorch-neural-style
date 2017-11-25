@@ -41,4 +41,3 @@ class Options(object):
                                 help="number of images after which the training loss is logged, default is 500")
         train_args.add_argument("--resume", type=str, default=None,
                                 help="resume if needed")
-                                

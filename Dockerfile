@@ -23,5 +23,5 @@ RUN pip install flask
 
 RUN chmod -R a+wx /opt
 
-ENTRYPOINT [ "/opt/ml/pytorch-neural-art/bin/entrypoint.sh" ]
+ENTRYPOINT [ "python3.5","algorithm/style_transfer.py" ]
 
