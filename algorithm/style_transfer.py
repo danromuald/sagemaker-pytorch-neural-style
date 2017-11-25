@@ -321,8 +321,8 @@ def serve():
 def main():
 
 # The main routine decides what mode we're in and executes that arm
-    args = Options()
-    args = args.parser.parse_args()
+    main_args = Options()
+    args = main_args.parser.parse_args()
     if args.subcommand == "train":
         logger.info("Training with arguments: " + str(args))
         train(args)
@@ -334,8 +334,8 @@ def main():
             "style_size": 512,
             "cuda": 1
         }
-        args.parser.set_defaults(**eval_args)
-        args = args.parser.parse_args()
+        main_args.parser.set_defaults(**eval_args)
+        args = main_args.parser.parse_args()
         logger.info("Serving with arguments: " + str(args))
         serve()
 
