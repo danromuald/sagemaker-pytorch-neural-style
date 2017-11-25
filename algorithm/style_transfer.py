@@ -38,7 +38,8 @@ input_path = os.path.join(sagemaker_prefix,'input/data')
 output_path = os.path.join(sagemaker_prefix, 'output')
 model_path = os.path.join(sagemaker_prefix, 'model')
 param_path = os.path.join(sagemaker_prefix, 'input/config/hyperparameters.json')
-final_model_filename = "msg_neural_style_transfer.model"
+temp_save_model_dir = os.path.join(sagemaker_prefix, 'pytorch-neural-art/models')
+final_model_filename = "pytorch_neural_style_transfer.model"
 
 
 logging.basicConfig(level=logging.INFO)
@@ -165,23 +166,23 @@ def train(args):
                             (agg_content_loss + agg_style_loss) / (batch_id + 1)
 
                         )
-                        logging.info(msg)
+                        print(msg)
                     
-                    if (batch_id + 1) % (4 * log_interval) == 0:
+                    if (batch_id + 1) % (20 * log_interval) == 0:
                         # save model
                         style_model.eval()
                         style_model.cpu()
-                        save_model_filename = "Epoch_" + str(e) + \
+                        save_model_filename = "Epoch_" + str(e) + "_" +\
                                               "iters_" + str(count) + \
                                               "_" + str(time.ctime()).replace(' ','_') + \
                                                "_" + str(args.content_weight) + "_" + \
                                                str(args.style_weight) + ".model"
-                        save_model_path = os.path.join(args.save_model_dir, save_model_filename)
+                        save_model_path = os.path.join(args.temp_save_model_dir, save_model_filename)
                         
                         torch.save(style_model.state_dict(), save_model_path)
                         style_model.train()
                         style_model.cuda()
-                        logging.info("\nCheckpoint, trained model saved at", save_model_path)
+                        logger.info("Checkpoint, trained model saved at " + str(save_model_path))
 
             # save the final model
 
@@ -191,7 +192,7 @@ def train(args):
                 model_path, final_model_filename)
             torch.save(style_model.state_dict(), save_final_model_path)
 
-            logging.info("\nDone, trained model saved at", save_model_path)
+            logger.info("Done, trained model saved at " + save_final_model_path)
 
             # Write out the success file
             with open(os.path.join(output_path, 'success'), 'w') as s:
@@ -257,7 +258,6 @@ class ScoringService(object):
         # Generate the base64 inference image string       
         stylized_img = utils.img_utils.tensor_make_inference_img_str(
                 output.data[0], args.cuda)
-        logger.info("Image processed")
         return stylized_img
 
 
@@ -274,7 +274,7 @@ from PIL import Image
 app = flask.Flask(__name__)
 
 
-@app.route("/ping", methods=["GET"])
+@app.route("/ping", methods=["GET","POST"])
 def ping():
     health = ScoringService.is_model_loaded()
     health = True
@@ -323,14 +323,23 @@ def main():
 # The main routine decides what mode we're in and executes that arm
     args = Options()
     args = args.parser.parse_args()
-    logger.info(str(args))
     if args.subcommand == "train":
         logger.info("Training with arguments: " + str(args))
         train(args)
     else:
+        eval_args = {
+            "style_folder": "images/9styles/",
+            "save_model_dir": "/opt/ml/model/",
+            "image_size": 256,
+            "style_size": 512,
+            "cuda": 1
+        }
+        args.parser.set_defaults(**eval_args)
+        args = args.parser.parse_args()
         logger.info("Serving with arguments: " + str(args))
         serve()
 
 
 if __name__ == "__main__":
     main()
+
