@@ -41,3 +41,17 @@ class Options(object):
                                 help="number of images after which the training loss is logged, default is 500")
         train_args.add_argument("--resume", type=str, default=None,
                                 help="resume if needed")
+
+        serve_args = subparsers.add_parser(
+            "serve", help="parser for training arguments")
+
+        serve_args.add_argument("--style-folder", type=str, default="images/21styles/",
+                                help="path to style-folder")
+        serve_args.add_argument("--image-size", type=int, default=256,
+                                help="size of training images, default is 256 X 256")
+        serve_args.add_argument("--style-size", type=int, default=512,
+                                help="size of style-image, default is the original size of style image")
+        serve_args.add_argument("--cuda", type=int, default=1,
+                                help="set it to 1 for running on GPU, 0 for CPU")
+        serve_args.add_argument("--save-model-dir", type=str, default="/opt/ml/model",
+                                help="where is the model saved")

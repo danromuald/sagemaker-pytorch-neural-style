@@ -330,14 +330,14 @@ if args.subcommand == "train":
     logger.info("Training with arguments: " + str(args))
     train(args)
 else:
-    eval_args = {
-        "style_folder": "images/21styles/",
-        "save_model_dir": "/opt/ml/model/",
-        "image_size": 256,
-        "style_size": 512,
-        "cuda": 1,
-        "ngf": 128
-    }
-    main_args.parser.set_defaults(**eval_args)
-    args = main_args.parser.parse_args()
+    # eval_args = {
+    #     "style_folder": "images/21styles/",
+    #     "save_model_dir": "/opt/ml/model/",
+    #     "image_size": 256,
+    #     "style_size": 512,
+    #     "cuda": 1,
+    #     "ngf": 128
+    # }
+    # main_args.parser.set_defaults(**eval_args)
+    # args = main_args.parser.parse_args()
     serve()
