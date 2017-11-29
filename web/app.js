@@ -12,7 +12,7 @@
 
 // Main app config
 var opticaiConfig = {
-  apiURL: 'http://ec2-34-203-210-79.compute-1.amazonaws.com:8080/invocations',
+  apiURL: 'http://ec2-54-218-47-249.us-west-2.compute.amazonaws.com:8080/invocations',
   cdn: "http://d1x7gg3vffpqew.cloudfront.net/",
   errorContainer: $('#errorMessage'),
   loader: $('#loader'),
