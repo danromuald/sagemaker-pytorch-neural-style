@@ -13,6 +13,7 @@ import sys
 import time
 import numpy as np
 import json
+import re
 from io import StringIO, BytesIO
 
 import torch
@@ -25,7 +26,7 @@ from torchvision import datasets
 from torchvision import transforms
 
 import utils
-from model import Net
+from model import Net, NetInf
 from utils.mod_utils import Vgg16
 from utils.img_utils import StyleLoader, InferenceStyleLoader, preprocess_batch
 
@@ -227,9 +228,10 @@ class ScoringService(object):
     @classmethod
     def get_model(cls):
         if not cls.is_model_loaded():
-                # TODO: change the load method to the proper format.
-                style_model = Net(ngf=args.ngf)
-                cls.model = style_model.load_state_dict(torch.load(os.path.join(model_path, final_model_filename)))
+            # TODO: change the load method to the proper format.
+            style_model = NetInf(ngf=128)
+            style_model.load_state_dict(torch.load(os.path.join(model_path, final_model_filename)))
+            cls.model = style_model
         return cls.model
 
     @classmethod
@@ -245,7 +247,7 @@ class ScoringService(object):
                                    cuda=args.cuda)
 
         content_image = utils.img_utils.tensor_load_inference_img(
-                content_image, size=args.content_size, keep_asp=True).unsqueeze(0)
+                content_img, size=args.image_size, keep_asp=True).unsqueeze(0)
         if args.cuda:
             content_image = content_image.cuda()
             content_image = Variable(
@@ -253,8 +255,8 @@ class ScoringService(object):
             cls.model.cuda()
 
         style_v = Variable(style_loader.get().data, volatile=True)
-        style_model.setTarget(style_v)
-        output = style_model(content_image)
+        cls.model.setTarget(style_v)
+        output = cls.model(content_image)
 
         # Generate the base64 inference image string       
         stylized_img = utils.img_utils.tensor_make_inference_img_str(
@@ -271,9 +273,10 @@ import base64
 import re
 import json
 from PIL import Image
+from flask_cors import CORS
 
 app = flask.Flask(__name__)
-
+CORS(app)
 
 @app.route("/ping", methods=["GET","POST"])
 def ping():
@@ -292,9 +295,10 @@ def transformation():
     # Convert from json to numpy
     if flask.request.content_type == "application/json":
         
-        data = request.json()
+        data = request.json
         base64_user_photo = data['userPhoto']
         style_photo = data['stylePhoto']
+        base64_user_photo = re.sub('^data:image/.+;base64,', '', base64_user_photo)
         content_img = Image.open(BytesIO(base64.b64decode(base64_user_photo)))
         
         # Do the prediction. Get the stylizedPhoto in base64
@@ -302,12 +306,13 @@ def transformation():
 
         # Results
 
-        result = jsonify(
+        return jsonify(
             {
-                "stylizedPhoto": stylizedPhoto
+                "stylizedPhoto": stylizedPhoto,
+		"status": 200
             }
         )
-        return flask.Response(response=result, status=200, mimetype="application/json")
+        # return flask.Response(response=result, status=200, mimetype="application/json")
 
     else:
         return flask.Response(response='This predictor only supports JSON data', status=415, mimetype="text/plain")
@@ -319,28 +324,22 @@ def serve():
     app.run(host="0.0.0.0", port=ScoringService.PORT)
 
 
-def main():
-
 # The main routine decides what mode we're in and executes that arm
-    main_args = Options()
+main_args = Options()
+args = main_args.parser.parse_args()
+if args.subcommand == "train":
+    logger.info("Training with arguments: " + str(args))
+    train(args)
+else:
+    eval_args = {
+        "style_folder": "images/21styles/",
+        "save_model_dir": "/opt/ml/model/",
+        "image_size": 256,
+        "style_size": 512,
+        "cuda": 1,
+        "ngf": 128
+    }
+    main_args.parser.set_defaults(**eval_args)
     args = main_args.parser.parse_args()
-    if args.subcommand == "train":
-        logger.info("Training with arguments: " + str(args))
-        train(args)
-    else:
-        eval_args = {
-            "style_folder": "images/9styles/",
-            "save_model_dir": "/opt/ml/model/",
-            "image_size": 256,
-            "style_size": 512,
-            "cuda": 1
-        }
-        main_args.parser.set_defaults(**eval_args)
-        args = main_args.parser.parse_args()
-        logger.info("Serving with arguments: " + str(args))
-        serve()
-
-
-if __name__ == "__main__":
-    main()
-    
+    logger.info("Serving with arguments: " + str(args))
+    serve()

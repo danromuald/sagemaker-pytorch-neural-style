@@ -14,6 +14,8 @@ import numpy as np
 import torch
 from PIL import Image
 from torch.autograd import Variable
+from io import BytesIO
+import base64
 
 
 def tensor_load_rgbimage(filename, size=None, scale=None, keep_asp=False):
@@ -58,7 +60,7 @@ def tensor_make_inference_img_str(tensor, cuda=True):
     buff = BytesIO()
     img.save(buff, format='JPEG')
     img_str = base64.b64encode(buff.getvalue())
-    return "base64:" + str(img_str)
+    return "data:image/jpeg;base64," + img_str.decode('utf-8')
 
 def tensor_save_rgbimage(tensor, filename, cuda=False):
     if cuda:
