@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Amazon SageMaker Style Transfer Demo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.13/semantic.min.css" type="text/css">
+    <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
+    <script
+      src="https://code.jquery.com/jquery-3.1.1.min.js"
+      integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+      crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.13/semantic.min.js" type="text/javascript"></script>
+    <style>
+      body {
+        -webkit-font-smoothing: antialiased;
+        font-smoothing: antialiased;
+      }
+      #header h1 {
+        font-weight: normal;
+        font-size: 2em;
+        background: -webkit-linear-gradient(45deg, #fbb65e, #ffe27a, #65905e);
+        background: linear-gradient(45deg, #fbb65e, #ffe27a, #65905e);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 10px;
+      }
+      #header h1 img {
+        height: 60px;
+        float: right;
+        width: 300px;
+        margin-right: 0;
+      }
+      #header h3 {
+        margin-top:0;
+        font-weight: normal;
+        color: #444;
+        font-size: 1em;
+        text-transform: uppercase;
+      }
+      #errorMessage {
+        display: none;
+      }
+      .styleImages img {
+        width: 160px;
+        height: 190px;
+        opacity: 0.7;
+      }
+      .styleImages img:hover {
+        opacity: 1;
+        cursor: pointer;
+      }
+      .question {
+        height:200px;
+        border: 1px solid rgba(0,0,0,.1);
+        text-align:center;
+        background:white;
+        color: #CCC;
+        line-height:200px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="ui container">
+      <div id="header" class="ui" style="margin-top:1.5rem;">
+        <h1 class="ui header">
+          Amazon SageMaker Style Transfer Demo
+          <img class="ui image" src="https://d2908q01vomqb2.cloudfront.net/22d200f8670dbdb3e253a90eee5098477c95c23d/2017/10/19/reInvent2017.png" alt="" />
+        </h1>
+        <h3>Style-transfer your photos</h2>
+      </div>
+
+      <div id="main" class="ui tablet stackable fluid three steps">
+        <div id="userPhotoStep" class="active step">
+          <div class="content">
+            <div class="title">Select your photo</div>
+            <div class="description">Choose your image to transform</div>
+            <div style="margin-top:0.5rem;">
+              <img id="userPhoto" class="ui bordered centered image" style="width:200px;height: 200px;"  src="http://d1x7gg3vffpqew.cloudfront.net/white-image.png">
+              <input id="photoInput" type='file' accept="image/gif, image/jpeg, image/png" hidden />
+              <div id="uploadButton" class="ui huge fluid yellow button" style="margin-top:20px;">Upload</div>
+            </div>
+          </div>
+        </div>
+        <div id="styleStep" class="disabled step">
+          <div class="content">
+            <div class="title">Select your style</div>
+            <div class="description">Choose the style to use.</div>
+            <div style="margin-top:0.5rem;">
+              <img id="stylePhoto" class="ui bordered centered image" style="width:200px;height: 200px;"  src="http://d1x7gg3vffpqew.cloudfront.net/white-image.png">
+              <input id="styleInput" type='text' hidden value=""/>
+              <div id="styleButton" class="ui huge fluid basic olive disabled button" style="margin-top:20px;">Select style</div>
+            </div>
+          </div>
+        </div>
+        <div id="transferStep" class="disabled step">
+          <div class="content">
+            <div class="title">Confirm and transfer!</div>
+            <div class="description">Get ready to see your styled photo</div>
+            <div style="margin-top:0.5rem;">
+              <div class="question">
+                <i class="ui massive help icon"></i>
+              </div>
+              <div id="transferButton" class="ui huge fluid basic green disabled button" style="margin-top:20px;">Transfer style</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="stylesModal" class="ui modal">
+      <i class="close icon"></i>
+      <div class="header">Select style</div>
+      <div class="image content">
+        <div class="description">
+          <div class="ui header">Select one of the images below to style your photo with.</div>
+          <div class="ui bordered images styleImages">
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/candy.jpg" alt="" />
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/composition_vii.jpg" alt="" />
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/escher_sphere.jpg" alt="" />
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/feathers.jpg" alt="" />
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/frida_kahlo.jpg" alt="" />
+          </div>
+          <div class="ui bordered images styleImages">
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/la_muse.jpg" alt="" />
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/mosaic_ducks_massimo.jpg" alt="" />
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/mosaic.jpg" alt="" />
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/pencil.jpg" alt="" />
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/picasso_selfport1907.jpg" alt="" />
+          </div>
+          <div class="ui bordered images styleImages">
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/rain_princess.jpg" alt="" />
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/Robert_Delaunay,_1906,_Portrait.jpg" alt="" />
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/scream.jpg" alt="" />
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/seated-nude.jpg" alt="" />
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/shipwreck.jpg" alt="" />
+          </div>
+          <div class="ui bordered images styleImages">
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/starry_night.jpg" alt="" />
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/stars2.jpg" alt="" />
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/stata.jpg" alt="" />
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/strip.jpg" alt="" />
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/the_scream.jpg" alt="" />
+          </div>
+          <div class="ui bordered images styleImages">
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/udnie.jpg" alt="" />
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/wave.jpg" alt="" />
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/woman-with-hat-matisse.jpg" alt="" />
+            <img src="http://d1x7gg3vffpqew.cloudfront.net/wreck.jpg" alt="" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="transferModal" class="ui modal">
+      <i class="close icon"></i>
+      <div class="header">Transfer image results</div>
+      <div id="errorMessage" class="content">
+        <div  class="ui negative message">
+          <div class="header">
+            We're sorry, but something went wrong.
+          </div>
+          <p>Please try again later.</p>
+        </div>
+      </div>
+      <div class="image content">
+        <div id="loader" class="ui active inverted dimmer">
+          <div class="ui text loader">Transfering style...</div>
+        </div>
+        <img id="styledPhoto" style="width:300px;height: 300px;"  src="http://d1x7gg3vffpqew.cloudfront.net/white-image.png" class="ui centered image" alt="" />
+      </div>
+      <div class="actions">
+        <a id="downloadButton" href="" download="Styled_photo.png" class="ui basic button">
+          <i class="download icon"></i> Download photo
+        </a>
+      </div>
+    </div>
+
+    <script src="app.js" type="text/javascript"></script>
+  </body>
+</html>
