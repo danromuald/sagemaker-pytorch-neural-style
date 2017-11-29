@@ -72,12 +72,12 @@ def train(args):
         with open(param_path,'r') as tc:
             
             trainingParams = json.load(tc)
-            ngf = trainingParams.get('ngf', args.ngf)
-            epochs = trainingParams.get('epochs', args.epochs)
-            batch_size = trainingParams.get('batch_size',args.batch_size)
-            log_interval = trainingParams.get('log_interval', args.log_interval)
-            learning_rate = trainingParams.get('learning_rate',args.learning_rate)
-            cuda = trainingParams.get('cuda', args.cuda)
+            ngf = int(trainingParams.get('ngf', args.ngf))
+            epochs = int(trainingParams.get('epochs', args.epochs))
+            batch_size = int(trainingParams.get('batch_size',args.batch_size))
+            log_interval = int(trainingParams.get('log_interval', args.log_interval))
+            learning_rate = float(trainingParams.get('learning_rate',args.learning_rate))
+            cuda = int(trainingParams.get('cuda', args.cuda))
 
             
             if cuda:
@@ -312,7 +312,6 @@ def transformation():
 		"status": 200
             }
         )
-        # return flask.Response(response=result, status=200, mimetype="application/json")
 
     else:
         return flask.Response(response='This predictor only supports JSON data', status=415, mimetype="text/plain")
@@ -341,5 +340,4 @@ else:
     }
     main_args.parser.set_defaults(**eval_args)
     args = main_args.parser.parse_args()
-    logger.info("Serving with arguments: " + str(args))
     serve()
