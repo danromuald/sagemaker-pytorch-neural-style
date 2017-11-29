@@ -240,6 +240,8 @@ var opticaiController = {
     // Reset photos
     opticaiConfig.photos.userPhoto.attr('src', opticaiConfig.cdn + 'white-image.png');
     opticaiConfig.photos.stylePhoto.attr('src', opticaiConfig.cdn + 'white-image.png');
+    // Reset stylizedPhoto src
+    opticaiConfig.photos.styledPhoto.attr('src', "data:image/jpeg;,");
     // Reset download button
     opticaiConfig.buttons.downloadButton.attr('href', "");
     // Reset error errorMessage
