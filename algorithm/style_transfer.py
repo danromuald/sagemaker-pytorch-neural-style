@@ -228,8 +228,8 @@ class ScoringService(object):
     @classmethod
     def get_model(cls):
         if not cls.is_model_loaded():
-            # TODO: change the load method to the proper format.
-            style_model = NetInf(ngf=128)
+            # NOTE: Make sure to load the model with the right DataParallel option.
+            style_model = Net(ngf=128)
             style_model.load_state_dict(torch.load(os.path.join(model_path, final_model_filename)))
             cls.model = style_model
         return cls.model
