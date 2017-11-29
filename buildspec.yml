@@ -1,0 +1,17 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - $(aws ecr get-login --no-include-email --region us-west-2)
+  build:
+    commands:
+      - echo Build started
+      - docker build -t pytorch_stylexfer:latest .
+      - docker tag pytorch_stylexfer:latest 903447430181.dkr.ecr.us-west-2.amazonaws.com/pytorch_stylexfer:latest
+  post_build:
+    commands:
+      - echo Build completed
+      - echo Pushing the Docker image to ECR with latest pointing to the most recent tag...
+      - docker push 903447430181.dkr.ecr.us-west-2.amazonaws.com/pytorch_stylexfer:latest
