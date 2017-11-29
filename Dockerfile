@@ -1,4 +1,4 @@
-FROM danulab/sagemaker/pytorch-base:latest
+FROM 903447430181.dkr.ecr.us-west-2.amazonaws.com/sagemaker-pytorch-base
 LABEL maintainer="Dan R. Mbanga"
 # vars
 ## Python version
@@ -10,7 +10,7 @@ ENV DANULAB_PYTORCH_IMAGE_VERSION 17.11
 ENV DANULAB_PYTORCH_BUILD_VERSION 2.0
 
 ENV PYTHONBUFFERED TRUE
-ENV CUDA_VISIBLE_DEVICES 0,1,2,3
+# ENV CUDA_VISIBLE_DEVICES 0,1,2,3
 
 ENV HOME_DIR /opt/ml/pytorch-neural-art
 
@@ -20,6 +20,6 @@ WORKDIR ${HOME_DIR}
 
 COPY . .
 
-RUN chmod -R a+wx /opt
+RUN chmod -R a+wx /opt && pip install flask_cors
 
 ENTRYPOINT ["python3.5","algorithm/style_transfer.py" ]
